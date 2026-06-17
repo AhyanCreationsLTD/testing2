@@ -1,26 +1,34 @@
-name: Ahyan Live Streamer
+name: Ahyan Pro Live Streamer
 
 on:
   workflow_dispatch:
     inputs:
       video_url:
-        description: 'https://archive.org/download/facebook-1781669299225-640p_202606/Facebook_1781669299225%28640p%29.mp4'
+        description: 'ভিডিওর ডিরেক্ট লিঙ্ক'
         required: true
       stream_key:
-        description: 'wway-tfmf-q95u-a74e-78mh'
+        description: 'YouTube Stream Key'
         required: true
 
 jobs:
   stream:
     runs-on: ubuntu-latest
+    timeout-minutes: 360 # ৫ ঘণ্টা ৫৫ মিনিটের জন্য ৬ ঘণ্টার টাইমআউট
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v3
-
-      - name: Start Streaming
+      - name: Start Advanced Streaming
         run: |
           sudo apt-get update && sudo apt-get install -y ffmpeg
-          ffmpeg -re -i "${{ github.event.inputs.video_url }}" \
+          
+          # ১. ওয়াচ গিফ এবং অ্যাডসের জন্য ফাইল ডাউনলোড
+          wget -q https://images.ahyancreations.top/watch.gif -O watch.gif
+          wget -q https://images.ahyancreations.top/ads.mp4 -O ads.mp4
+          
+          # ২. স্ট্রিম কমান্ড
+          ffmpeg -re -stream_loop -1 -i "${{ github.event.inputs.video_url }}" \
+          -i watch.gif -i ads.mp4 \
+          -filter_complex "[0:v][1:v] overlay=W-w-10:H-h-10 [v1]; \
+          [v1][2:v] overlay=0:0:enable='mod(t,60)<=10' [outv]" \
+          -map [outv] -map 0:a \
           -c:v libx264 -preset veryfast -b:v 2500k -maxrate 2500k -bufsize 5000k \
           -pix_fmt yuv420p -g 50 -c:a aac -b:a 128k -ac 2 -ar 44100 \
           -f flv rtmp://a.rtmp.youtube.com/live2/${{ github.event.inputs.stream_key }}
