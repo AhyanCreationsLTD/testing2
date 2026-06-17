@@ -4,10 +4,10 @@ on:
   workflow_dispatch:
     inputs:
       video_url:
-        description: 'ভিডিওর ডিরেক্ট লিঙ্ক'
+        description: 'https://archive.org/download/facebook-1781669299225-640p_202606/Facebook_1781669299225%28640p%29.mp4'
         required: true
       stream_key:
-        description: 'YouTube Stream Key'
+        description: 'wway-tfmf-q95u-a74e-78mh'
         required: true
 
 jobs:
@@ -21,10 +21,11 @@ jobs:
           wget -q https://images.ahyancreations.top/watch.gif -O watch.gif
           wget -q https://images.ahyancreations.top/ads.mp4 -O ads.mp4
           
+          # ইউটিউবের জন্য অপ্টিমাইজড কমান্ড
           ffmpeg -re -stream_loop -1 -i "${{ github.event.inputs.video_url }}" \
           -i watch.gif -i ads.mp4 \
-          -filter_complex "[0:v][1:v] overlay=W-w-10:H-h-10 [v1]; [v1][2:v] overlay=0:0:enable='lt(mod(t,60),10)' [outv]" \
+          -filter_complex "[0:v]scale=1280:720[bg];[bg][1:v]overlay=W-w-10:H-h-10[v1];[v1][2:v]overlay=0:0:enable='lt(mod(t,60),10)'[outv]" \
           -map "[outv]" -map 0:a \
           -c:v libx264 -preset veryfast -b:v 2500k -maxrate 2500k -bufsize 5000k \
-          -pix_fmt yuv420p -g 50 -c:a aac -b:a 128k -ac 2 -ar 44100 \
+          -pix_fmt yuv420p -g 60 -c:a aac -b:a 128k -ac 2 -ar 44100 \
           -f flv rtmp://a.rtmp.youtube.com/live2/${{ github.event.inputs.stream_key }}
