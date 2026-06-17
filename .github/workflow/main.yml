@@ -1,0 +1,32 @@
+name: Stream Workflow
+
+on:
+  workflow_dispatch:
+    inputs:
+      video_name:
+        description: 'Video URL'
+        required: true
+      stream_key:
+        description: 'Stream Key'
+        required: true
+      timeout:
+        description: 'Timeout in seconds'
+        required: true
+        default: '21600'
+
+jobs:
+  stream:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Start Streaming
+        run: |
+          # timeout variable
+          TIME="${{ github.event.inputs.timeout }}"
+          
+          if [ "$TIME" == "0" ]; then
+            # আনলিমিটেড
+            ffmpeg -re -i "${{ github.event.inputs.video_name }}" -c:v libx264 -preset veryfast -b:v 3000k -maxrate 3000k -bufsize 6000k -pix_fmt yuv420p -g 50 -c:a aac -b:a 160k -ac 2 -ar 44100 -f flv "rtmp://server/${{ github.event.inputs.stream_key }}"
+          else
+            # লিমিটেড (ফ্রি বা বেসিক)
+            timeout ${TIME}s ffmpeg -re -i "${{ github.event.inputs.video_name }}" -c:v libx264 -preset veryfast -b:v 3000k -maxrate 3000k -bufsize 6000k -pix_fmt yuv420p -g 50 -c:a aac -b:a 160k -ac 2 -ar 44100 -f flv "rtmp://server/${{ github.event.inputs.stream_key }}"
+          fi
