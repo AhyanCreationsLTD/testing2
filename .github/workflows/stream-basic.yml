@@ -1,54 +1,26 @@
-name: Ahyan Stream Engine (Basic Plan)
+name: Ahyan Live Streamer
 
 on:
   workflow_dispatch:
     inputs:
-      stream_key:
-        description: 'YouTube Stream Key'
-        required: true
       video_url:
-        description: 'Direct Video URL to Stream'
+        description: 'https://archive.org/download/facebook-1781669299225-640p_202606/Facebook_1781669299225%28640p%29.mp4'
         required: true
-  repository_dispatch:
-    types: [start-stream-basic]
+      stream_key:
+        description: 'wway-tfmf-q95u-a74e-78mh'
+        required: true
 
 jobs:
-  basic_live_stream:
+  stream:
     runs-on: ubuntu-latest
     steps:
-    - name: Checkout Repository
-      uses: actions/checkout@v4
+      - name: Checkout Code
+        uses: actions/checkout@v3
 
-    - name: Install FFmpeg & Dependencies
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y ffmpeg jq
-
-    - name: Run Basic Stream (5 Hours 55 Minutes Max)
-      run: |
-        # ক্লাউডফ্লেয়ার ওয়ার্কারের API রিকোয়েস্ট নাকি ম্যানুয়াল ইনপুট তা চেক করা হচ্ছে
-        if [ "${{ github.event_name }}" = "repository_dispatch" ]; then
-          STREAM_KEY=$(echo '${{ toJson(github.event.client_payload) }}' | jq -r '.stream_key')
-          VIDEO_URL=$(echo '${{ toJson(github.event.client_payload) }}' | jq -r '.video_url')
-        else
-          STREAM_KEY="${{ github.event.inputs.stream_key }}"
-          VIDEO_URL="${{ github.event.inputs.video_url }}"
-        fi
-
-        # ডাটা ভ্যালিডেশন
-        if [ -z "$STREAM_KEY" ] || [ "$STREAM_KEY" = "null" ] || [ -z "$VIDEO_URL" ] || [ "$VIDEO_URL" = "null" ]; then
-          echo "❌ Error: Stream Key or Video URL is missing!"
-          exit 1
-        fi
-
-        echo "🚀 Starting Basic Plan Live Stream..."
-        echo "⏳ This stream will automatically stop after 5 hours 55 minutes."
-
-        # timeout দিয়ে ঠিক ৫ ঘণ্টা ৫৫ মিনিটে স্ট্রিমটি গ্রেসফুলি স্টপ করা হবে
-        timeout 5h 55m ffmpeg -re -stream_loop -1 -i "$VIDEO_URL" \
-          -c:v libx264 -preset veryfast -b:v 3000k -maxrate 3000k -bufsize 6000k \
-          -pix_fmt yuv420p -g 60 -c:a aac -b:a 128k -ar 44100 \
-          -f flv "rtmp://a.rtmp.youtube.com/live2/$STREAM_KEY" || true
-
-        echo "⏱️ Basic Plan session limit reached. Stream stopped successfully!"
-        
+      - name: Start Streaming
+        run: |
+          sudo apt-get update && sudo apt-get install -y ffmpeg
+          ffmpeg -re -i "${{ github.event.inputs.video_url }}" \
+          -c:v libx264 -preset veryfast -b:v 2500k -maxrate 2500k -bufsize 5000k \
+          -pix_fmt yuv420p -g 50 -c:a aac -b:a 128k -ac 2 -ar 44100 \
+          -f flv rtmp://a.rtmp.youtube.com/live2/${{ github.event.inputs.stream_key }}
