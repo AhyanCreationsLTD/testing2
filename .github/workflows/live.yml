@@ -1,20 +1,33 @@
+on:
+  workflow_dispatch:
+    inputs:
+      video_url:
+        description: 'ভিডিওর ডিরেক্ট লিঙ্ক'
+        required: true
+        default: 'https://archive.org/download/facebook-1781669299225-640p_202606/Facebook_1781669299225%28640p%29.mp4'
+      stream_key:
+        description: 'YouTube Stream Key'
+        required: true
+
+jobs:
+  stream:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    steps:
       - name: Start Advanced Streaming
         run: |
-          sudo apt-get update && sudo apt-get install -y ffmpeg
-          wget -q https://images.ahyancreations.top/watch.gif -O watch.gif
-          wget -q https://images.ahyancreations.top/ads.mp4 -O ads.mp4
+          sudo apt-get update -y
+          sudo apt-get install -y ffmpeg wget
           
-          # ফাইনাল ইউটিউব ফ্রেন্ডলি কমান্ড
+          wget -q https://images.ahyancreations.top/watch.gif -O watch.gif || touch watch.gif
+          wget -q https://images.ahyancreations.top/ads.mp4 -O ads.mp4 || ffmpeg -f lavfi -i color=black:s=1280x720:d=1 -c:v libx264 -t 1 ads.mp4
+          
           ffmpeg -re -stream_loop -1 -i "${{ github.event.inputs.video_url }}" \
-          -stream_loop -1 -i watch.gif -stream_loop -1 -i ads.mp4 \
-          -filter_complex "[0:v]scale=1280:720,setsar=1[v0]; \
-          [1:v]scale=150:-1[clock]; \
-          [2:v]scale=1280:720[ads]; \
-          [v0][ads]overlay=0:0:enable='lt(mod(t,60),10)'[v_ads]; \
-          [v_ads][clock]overlay=W-w-20:H-h-20[outv]" \
-          -map "[outv]" -map 0:a \
-          -c:v libx264 -preset veryfast -profile:v main -b:v 2500k -maxrate 2500k -bufsize 5000k \
-          -g 60 -keyint_min 60 -sc_threshold 0 -pix_fmt yuv420p \
-          -c:a aac -b:a 128k -ac 2 -ar 44100 -af "async=1" \
-          -f flv rtmp://a.rtmp.youtube.com/live2/${{ github.event.inputs.stream_key }}
-          
+            -stream_loop -1 -i watch.gif \
+            -stream_loop -1 -i ads.mp4 \
+            -filter_complex "[0:v]scale=1280:720:force_original_aspect_ratio=decrease,pad=1280:720:(ow-iw)/2:(oh-ih)/2,setsar=1[v0];[1:v]scale=150:-1:force_original_aspect_ratio=decrease[clock];[2:v]scale=1280:720:force_original_aspect_ratio=decrease,pad=1280:720:(ow-iw)/2:(oh-ih)/2[ads];[v0][ads]overlay=0:0:enable='lt(mod(t\,60)\,10)'[v_ads];[v_ads][clock]overlay=W-w-20:H-h-20[outv]" \
+            -map "[outv]" -map 0:a \
+            -c:v libx264 -preset veryfast -profile:v main -b:v 2500k -maxrate 2500k -bufsize 5000k \
+            -g 60 -keyint_min 60 -sc_threshold 0 -pix_fmt yuv420p \
+            -c:a aac -b:a 128k -ac 2 -ar 44100 -af "aresample=async=1" \
+            -f flv "rtmp://a.rtmp.youtube.com/live2/${{ github.event.inputs.stream_key }}"
