@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       video_url:
-        description: 'ভিডিওর ডিরেক্ট লিঙ্ক (Archive.org)'
+        description: 'ভিডিওর ডিরেক্ট লিঙ্ক'
         required: true
         default: 'https://archive.org/download/facebook-1781669299225-640p_202606/Facebook_1781669299225%28640p%29.mp4'
       stream_key:
@@ -22,10 +22,14 @@ jobs:
           wget -q https://images.ahyancreations.top/watch.gif -O watch.gif
           wget -q https://images.ahyancreations.top/ads.mp4 -O ads.mp4
           
-          # ইউটিউবের জন্য সর্বোচ্চ স্ট্যাবিলিটি কমান্ড
+          # ফাইনাল স্ট্যাবল কমান্ড
           ffmpeg -re -stream_loop -1 -i "${{ github.event.inputs.video_url }}" \
           -stream_loop -1 -i watch.gif -stream_loop -1 -i ads.mp4 \
-          -filter_complex "[0:v]scale=1280:720,setsar=1[bg];[bg][1:v]overlay=W-w-10:H-h-10[v1];[v1][2:v]overlay=0:0:enable='lt(mod(t,60),10)'[outv]" \
+          -filter_complex "[1:v]scale=150:-1[clock]; \
+          [2:v]scale=1280:720[ads]; \
+          [0:v]scale=1280:720,setsar=1[bg]; \
+          [bg][clock]overlay=W-w-20:H-h-20[v1]; \
+          [v1][ads]overlay=0:0:enable='lt(mod(t,60),10)':format=yuv420[outv]" \
           -map "[outv]" -map 0:a \
           -c:v libx264 -preset veryfast -profile:v main -b:v 2500k -maxrate 2500k -bufsize 5000k \
           -g 60 -keyint_min 60 -sc_threshold 0 -pix_fmt yuv420p \
