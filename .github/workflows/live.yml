@@ -4,7 +4,7 @@ on:
       video_url:
         description: 'ভিডিওর ডিরেক্ট লিঙ্ক'
         required: true
-        default: 'https://archive.org/download/facebook-1781669299225-640p_202606/Facebook_1781669299225%28640p%29.mp4'
+        default: 'https://images.ahyancreations.top/ads.mp4'
       stream_key:
         description: 'YouTube Stream Key'
         required: true
