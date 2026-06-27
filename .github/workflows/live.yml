@@ -2,9 +2,9 @@ on:
   workflow_dispatch:
     inputs:
       video_url:
-        description: 'ভিডিওর ডিরেক্ট লিঙ্ক'
+        description: 'ভিডিওর ডিরেক্ট লিঙ্ক (অবশ্যই অডিওসহ ভিডিও হতে হবে)'
         required: true
-        default: 'https://images.ahyancreations.top/ads.mp4'
+        default: 'https://images.ahyancreations.top/ads.mp4' # টেস্ট করার সময় এখানে অডিওসহ কোনো ভিডিওর লিংক দিন
       stream_key:
         description: 'YouTube Stream Key'
         required: true
@@ -25,7 +25,7 @@ jobs:
           ffmpeg -re -stream_loop -1 -i "${{ github.event.inputs.video_url }}" \
             -stream_loop -1 -i watch.gif \
             -stream_loop -1 -i ads.mp4 \
-            -filter_complex "[0:v]scale=1280:720:force_original_aspect_ratio=decrease,pad=1280:720:(ow-iw)/2:(oh-ih)/2,setsar=1[v0];[1:v]scale=150:-1:force_original_aspect_ratio=decrease[clock];[2:v]scale=1280:720:force_original_aspect_ratio=decrease,pad=1280:720:(ow-iw)/2:(oh-ih)/2[ads];[v0][ads]overlay=0:0:enable='lt(mod(t\,60)\,10)'[v_ads];[v_ads][clock]overlay=W-w-20:H-h-20[outv]" \
+            -filter_complex "[0:v]fps=30,scale=1280:720:force_original_aspect_ratio=decrease,pad=1280:720:(ow-iw)/2:(oh-ih)/2,setsar=1[v0];[1:v]scale=150:-1:force_original_aspect_ratio=decrease[clock];[2:v]fps=30,scale=1280:720:force_original_aspect_ratio=decrease,pad=1280:720:(ow-iw)/2:(oh-ih)/2[ads];[v0][ads]overlay=0:0:enable='lt(mod(t\,60)\,10)'[v_ads];[v_ads][clock]overlay=W-w-20:H-h-20[outv]" \
             -map "[outv]" -map 0:a? \
             -c:v libx264 -preset veryfast -profile:v main -b:v 2500k -maxrate 2500k -bufsize 5000k \
             -g 60 -keyint_min 60 -sc_threshold 0 -pix_fmt yuv420p \
